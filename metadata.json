@@ -1,0 +1,5 @@
+{
+  "name": "Event Horizon - WebGPU Black Hole",
+  "description": "A General Relativistic ray-tracer simulating a rotating Kerr black hole. Features realistic Doppler beaming, gravitational redshift, frame-dragging effects, and a volumetric accretion disk rendered using WebGPU.",
+  "requestFramePermissions": []
+}
