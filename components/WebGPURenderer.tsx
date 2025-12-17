@@ -10,6 +10,7 @@ interface WebGPURendererProps {
 
 const WebGPURenderer: React.FC<WebGPURendererProps> = ({ params, setErrorMessage, onPerformanceUpdate }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const requestRef = useRef<number>(0);
   const deviceRef = useRef<GPUDevice | null>(null);
   const pipelineRef = useRef<GPURenderPipeline | null>(null);
@@ -27,32 +28,28 @@ const WebGPURenderer: React.FC<WebGPURendererProps> = ({ params, setErrorMessage
     let active = true;
 
     const init = async () => {
-      // 1. Check for Navigator Support
       if (!navigator.gpu) {
         if (active) setErrorMessage("WebGPU is not supported in this browser. Please use Chrome 113+, Edge, or Firefox Nightly.");
         return;
       }
 
       try {
-        // 2. Request Adapter (Hardware Check)
         const adapter = await navigator.gpu.requestAdapter({
             powerPreference: "high-performance"
         });
         
         if (!adapter) {
-          if (active) setErrorMessage("No WebGPU adapter found. Ensure hardware acceleration is enabled in your browser settings and your graphics drivers are up to date.");
+          if (active) setErrorMessage("No WebGPU adapter found. Ensure hardware acceleration is enabled.");
           return;
         }
 
-        // 3. Request Device
         const device = await adapter.requestDevice();
         if (!active) return;
         deviceRef.current = device;
         
-        // Add Device Lost Listener
         device.lost.then((info) => {
             console.error("WebGPU Device Lost:", info);
-            if (active) setErrorMessage(`WebGPU device lost: ${info.message || 'Unknown reason'}. The driver may have crashed.`);
+            if (active) setErrorMessage(`WebGPU device lost: ${info.message || 'Unknown reason'}`);
         });
 
         const canvas = canvasRef.current;
@@ -60,7 +57,7 @@ const WebGPURenderer: React.FC<WebGPURendererProps> = ({ params, setErrorMessage
 
         const context = canvas.getContext('webgpu') as unknown as GPUCanvasContext;
         if (!context) {
-          if (active) setErrorMessage("Could not acquire WebGPU context from canvas.");
+          if (active) setErrorMessage("Could not acquire WebGPU context.");
           return;
         }
         contextRef.current = context;
@@ -72,25 +69,22 @@ const WebGPURenderer: React.FC<WebGPURendererProps> = ({ params, setErrorMessage
           alphaMode: 'premultiplied',
         });
 
-        // Create Shader Module
         const shaderModule = device.createShaderModule({
           label: 'Black Hole Shaders',
           code: BLACK_HOLE_SHADER,
         });
         
-        // Check for compilation info messages if supported
         if (shaderModule.getCompilationInfo) {
              shaderModule.getCompilationInfo().then((info) => {
                  for (const message of info.messages) {
                      if (message.type === 'error') {
                          console.error('Shader Compilation Error:', message);
-                         if (active) setErrorMessage(`Shader compilation failed: ${message.message} at line ${message.lineNum}`);
+                         if (active) setErrorMessage(`Shader compilation failed: ${message.message}`);
                      }
                  }
              });
         }
 
-        // Uniform Buffer Setup
         const uniformBufferSize = 80; // 20 floats * 4 bytes
         const uniformBuffer = device.createBuffer({
           size: uniformBufferSize,
@@ -98,7 +92,6 @@ const WebGPURenderer: React.FC<WebGPURendererProps> = ({ params, setErrorMessage
         });
         uniformBufferRef.current = uniformBuffer;
 
-        // Pipeline Layout
         const bindGroupLayout = device.createBindGroupLayout({
           entries: [{
             binding: 0,
@@ -145,14 +138,8 @@ const WebGPURenderer: React.FC<WebGPURendererProps> = ({ params, setErrorMessage
 
     init();
 
-    return () => {
-      active = false;
-      // Cleanup
-      // WebGPU objects are garbage collected, but we can destroy/unconfigure if needed
-      // Currently, we just let them go
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run once on mount
+    return () => { active = false; };
+  }, [setErrorMessage]);
 
   // Render Loop
   useEffect(() => {
@@ -169,10 +156,9 @@ const WebGPURenderer: React.FC<WebGPURendererProps> = ({ params, setErrorMessage
         return;
       }
 
-      // --- FPS Calculation ---
       const now = performance.now();
       frameCountRef.current++;
-      if (now - lastFpsTimeRef.current >= 500) { // Update every 500ms
+      if (now - lastFpsTimeRef.current >= 500) {
         const duration = now - lastFpsTimeRef.current;
         const fps = Math.round((frameCountRef.current * 1000) / duration);
         const frameTime = duration / frameCountRef.current;
@@ -181,16 +167,12 @@ const WebGPURenderer: React.FC<WebGPURendererProps> = ({ params, setErrorMessage
         lastFpsTimeRef.current = now;
       }
 
-      // 1. Update Uniforms
       const time = (Date.now() - startTimeRef.current) / 1000.0;
-      
-      // Calculate Camera Vectors based on angles
       const { zoom, cameraAngle, cameraHeight } = params;
       const r = zoom;
       const theta = cameraAngle; 
-      const phi = Math.max(0.01, Math.min(Math.PI - 0.01, cameraHeight)); // Avoid gimbal lock poles
+      const phi = Math.max(0.01, Math.min(Math.PI - 0.01, cameraHeight));
 
-      // Spherical to Cartesian
       const cx = r * Math.sin(phi) * Math.cos(theta);
       const cy = r * Math.cos(phi);
       const cz = r * Math.sin(phi) * Math.sin(theta);
@@ -201,31 +183,25 @@ const WebGPURenderer: React.FC<WebGPURendererProps> = ({ params, setErrorMessage
 
       const resolution = [canvas.width, canvas.height];
 
-      // Pack data
       const uniformData = new Float32Array(20); 
       uniformData[0] = time;
       uniformData[1] = params.spin;
       uniformData[2] = params.diskIntensity;
       uniformData[3] = params.gravitationalLensing;
-      
       uniformData[4] = resolution[0];
       uniformData[5] = resolution[1];
-      
       uniformData[8] = camPos[0];
       uniformData[9] = camPos[1];
       uniformData[10] = camPos[2];
-      
       uniformData[12] = camDir[0];
       uniformData[13] = camDir[1];
       uniformData[14] = camDir[2];
-      
       uniformData[16] = 0;
       uniformData[17] = 1;
       uniformData[18] = 0;
 
       device.queue.writeBuffer(uniformBuffer, 0, uniformData);
 
-      // 2. Encode Commands
       const commandEncoder = device.createCommandEncoder();
       const textureView = context.getCurrentTexture().createView();
       
@@ -241,11 +217,10 @@ const WebGPURenderer: React.FC<WebGPURendererProps> = ({ params, setErrorMessage
       const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
       passEncoder.setPipeline(pipeline);
       passEncoder.setBindGroup(0, bindGroup);
-      passEncoder.draw(6); // 2 triangles
+      passEncoder.draw(6); 
       passEncoder.end();
 
       device.queue.submit([commandEncoder.finish()]);
-
       requestRef.current = requestAnimationFrame(render);
     };
 
@@ -255,27 +230,36 @@ const WebGPURenderer: React.FC<WebGPURendererProps> = ({ params, setErrorMessage
     };
   }, [params, onPerformanceUpdate]);
 
-  // Handle Resize
+  // Use ResizeObserver for more robust viewport handling
   useEffect(() => {
-    const handleResize = () => {
-      if (canvasRef.current) {
-        const parent = canvasRef.current.parentElement;
-        if (parent) {
-          canvasRef.current.width = parent.clientWidth * window.devicePixelRatio;
-          canvasRef.current.height = parent.clientHeight * window.devicePixelRatio;
+    const container = containerRef.current;
+    if (!container) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        const { width, height } = entry.contentRect;
+        const canvas = canvasRef.current;
+        if (canvas) {
+          const dpr = window.devicePixelRatio || 1;
+          canvas.width = width * dpr;
+          canvas.height = height * dpr;
+          // Important: Explicitly set CSS width/height to match container
+          canvas.style.width = `${width}px`;
+          canvas.style.height = `${height}px`;
         }
       }
-    };
-    window.addEventListener('resize', handleResize);
-    handleResize(); // Initial
-    return () => window.removeEventListener('resize', handleResize);
+    });
+
+    resizeObserver.observe(container);
+    return () => resizeObserver.disconnect();
   }, []);
 
   return (
-    <div className="w-full h-full bg-black relative">
+    <div ref={containerRef} className="w-full h-full bg-black relative overflow-hidden">
       <canvas 
         ref={canvasRef} 
-        className="w-full h-full block"
+        className="block touch-none"
+        style={{ display: 'block' }}
       />
     </div>
   );

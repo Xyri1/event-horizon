@@ -57,18 +57,18 @@ function App() {
 
   return (
     <div 
-      className="w-screen h-screen bg-black overflow-hidden relative cursor-move select-none"
+      className="fixed inset-0 w-full h-full bg-black overflow-hidden relative cursor-move select-none touch-none"
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
       onWheel={handleWheel}
     >
-      <div className="absolute top-6 left-6 z-10 pointer-events-none">
-        <h1 className="text-4xl font-black text-white tracking-tighter mix-blend-difference">
+      <div className="absolute top-6 left-6 z-20 pointer-events-none">
+        <h1 className="text-3xl md:text-4xl font-black text-white tracking-tighter mix-blend-difference">
           EVENT <span className="text-cyan-400">HORIZON</span>
         </h1>
-        <p className="text-sm text-cyan-200/50 tracking-widest mt-1">RAYTRACED SINGULARITY ENGINE</p>
+        <p className="text-[10px] md:text-xs text-cyan-200/50 tracking-widest mt-1">RAYTRACED SINGULARITY ENGINE</p>
       </div>
 
       <WebGPURenderer 
@@ -77,15 +77,17 @@ function App() {
         onPerformanceUpdate={setPerformance} 
       />
       
-      {/* Pass mouse events wrapper to avoid blocking controls, but controls themselves stop propagation */}
-      <div className="absolute top-0 right-0 h-full pointer-events-none p-4">
-        <div className="pointer-events-auto">
-             <ControlPanel 
-              params={params} 
-              setParams={setParams} 
-              errorMessage={errorMessage}
-              performance={performance}
-            />
+      {/* UI Overlay Container */}
+      <div className="absolute inset-0 pointer-events-none p-4 z-30">
+        <div className="flex justify-end items-start h-full">
+           <div className="pointer-events-auto">
+                <ControlPanel 
+                params={params} 
+                setParams={setParams} 
+                errorMessage={errorMessage}
+                performance={performance}
+                />
+           </div>
         </div>
       </div>
     </div>

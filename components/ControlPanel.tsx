@@ -17,7 +17,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ params, setParams, errorMes
   };
 
   return (
-    <div className="absolute top-4 right-4 w-80 bg-black/90 backdrop-blur-xl border border-gray-800 text-white rounded-xl shadow-2xl z-10 transition-all duration-300">
+    <div className="w-full max-w-[320px] bg-black/80 backdrop-blur-xl border border-gray-800 text-white rounded-xl shadow-2xl transition-all duration-300">
       {/* Header */}
       <div 
         className={`flex items-center justify-between p-4 cursor-pointer hover:bg-white/5 transition-colors rounded-xl ${!isCollapsed ? 'rounded-b-none bg-white/5' : ''}`}
@@ -25,16 +25,16 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ params, setParams, errorMes
       >
         <div className="flex items-center gap-3">
           <Settings className={`w-4 h-4 transition-colors ${!isCollapsed ? 'text-cyan-400' : 'text-gray-400'}`} />
-          <h2 className="text-sm font-bold tracking-widest uppercase text-gray-200">Simulation Core</h2>
+          <h2 className="text-xs font-bold tracking-widest uppercase text-gray-200">Simulation Core</h2>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-[10px] font-mono font-medium text-emerald-400 bg-emerald-950/30 border border-emerald-900/30 px-2.5 py-1 rounded select-none whitespace-nowrap">
+          <div className="flex items-center gap-2 text-[9px] font-mono font-medium text-emerald-400 bg-emerald-950/30 border border-emerald-900/30 px-2 py-1 rounded select-none whitespace-nowrap">
              <Activity className="w-3 h-3" />
              <span>{performance.fps} FPS</span>
-             <span className="text-emerald-800 mx-1">|</span>
+             <span className="text-emerald-800 mx-0.5">|</span>
              <span>{performance.frameTime.toFixed(1)}ms</span>
           </div>
-          <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 ${isCollapsed ? 'rotate-0' : 'rotate-180'}`} />
+          <ChevronDown className={`w-3.5 h-3.5 text-gray-500 transition-transform duration-300 ${isCollapsed ? 'rotate-0' : 'rotate-180'}`} />
         </div>
       </div>
       
@@ -122,8 +122,8 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ params, setParams, errorMes
                 </div>
             </div>
 
-            <div className="mt-6 text-[9px] text-gray-600 text-center font-mono">
-                WEB GPU RAY MARCHING
+            <div className="mt-6 text-[9px] text-gray-600 text-center font-mono uppercase tracking-widest">
+                WebGPU Ray Tracing
             </div>
         </div>
       </div>

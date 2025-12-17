@@ -2,12 +2,30 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Event Horizon - WebGPU Black Hole</title>
     <!-- Keeping Tailwind CDN for simplicity in this specific workflow, though local install is preferred for prod -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-      body { margin: 0; overflow: hidden; background-color: #000; color: white; }
+      :root {
+        color-scheme: dark;
+      }
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        height: 100dvh;
+        overflow: hidden;
+        background-color: #000;
+        color: white;
+        touch-action: none;
+        overscroll-behavior: none;
+      }
+      #root {
+        width: 100%;
+        height: 100%;
+      }
     </style>
   <script type="importmap">
 {
